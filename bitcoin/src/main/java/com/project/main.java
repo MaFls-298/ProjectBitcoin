@@ -10,7 +10,7 @@ public class main {
 
         List<Token> scriptList = new ArrayList<>();
 
-        // Ejemplo: 2 3 ADD 5 EQUAL
+        // 2 3 add 5 EQ
         scriptList.add(new Token(Opcode.OP_2));
         scriptList.add(new Token(Opcode.OP_3));
         scriptList.add(new Token(Opcode.OP_ADD));
