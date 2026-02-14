@@ -1,3 +1,5 @@
+package com.project;
+
 import java.util.List;
 
 public class BitcoinScript {
@@ -57,12 +59,6 @@ public class BitcoinScript {
                 stack.pop();
                 break;
 
-            case OP_SWAP:
-                byte[] a = stack.pop();
-                byte[] b = stack.pop();
-                stack.push(a);
-                stack.push(b);
-                break;
 
             case OP_ADD:
                 int x = Stack.bytesToInt(stack.pop());
@@ -90,9 +86,7 @@ public class BitcoinScript {
                 }
                 break;
 
-            case OP_RETURN:
-                throw new ScriptException("Script failed, OP_RETURN");
-
+        
             default:
                 throw new ScriptException("a");
         }

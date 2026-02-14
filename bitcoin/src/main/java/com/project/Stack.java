@@ -2,9 +2,6 @@ package com.project;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import javax.script.ScriptException;
-
-import javax.script.ScriptException;
 
 public class Stack {
         private Deque<byte[]> stack = new ArrayDeque<>();
