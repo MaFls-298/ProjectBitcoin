@@ -30,6 +30,7 @@ public enum Opcode {
 
     OP_HASH160,
     OP_CHECKSIG,
+    OP_CHECKSIGVERIFY,
 
     PUSHDATA;
 
