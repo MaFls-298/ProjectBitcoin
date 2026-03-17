@@ -89,6 +89,15 @@ public class BitcoinScript {
                 stack.push(intToBytes(java.util.Arrays.equals(v1, v2) ? 1 : 0));
                 break;
 
+            case OP_VERIFY:
+                if (stack.isEmpty()) {
+                    throw new ScriptException("OP_VERIFY failed: stack empty");
+                }
+                if (!toBool(stack.pop())) {
+                    throw new ScriptException("OP_VERIFY failed");
+                }
+                break;
+
             case OP_EQUALVERIFY:
                 if (stack.size() < 2) {
                     throw new ScriptException("OP_EQUALVERIFY failed: not enough elements");

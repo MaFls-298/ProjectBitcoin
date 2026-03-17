@@ -5,40 +5,66 @@ import java.util.List;
 
 
 
+
+
+
+
 public class MainTest {
 
     public static void main(String[] args) {
 
         boolean trace = true;
 
-        System.out.println("=== Simulacion de transaccion ===");
+        System.out.println("===== SIMULACION P2PKH =====");
 
-        // original
-        byte[] pubKey = new byte[]{11,11,11,12};
+        
+        byte[] pubKey = new byte[]{11, 11, 11, 12};
         byte[] pubKeyHash = Hash.hash160(pubKey);
+//utxo
+        List<Token> scriptPubKey = crearScriptPubKey(pubKeyHash);
 
-        // scriptPubKey)
+        TransactionOutput output = new TransactionOutput(scriptPubKey);
+        UTXO utxo = new UTXO(output);
+
+
+        ////////////////////  Caso válido/////////
+
+        System.out.println("\n--- TRANSACCION VALIDA ---");
+
+        byte[] signatureValida = Hash.hash160(pubKey);
+
+        Transaction txValida = crearTransaccion(signatureValida, pubKey);
+
+        validarTransaccion(txValida, utxo, trace);
+
+        
+        // ///////////////////// Caso inválido
+        
+        System.out.println("\n--- TRANSACCION INVALIDA ---");
+
+        byte[] signatureInvalida = new byte[]{67, 67, 67, 67};
+
+        Transaction txInvalida = crearTransaccion(signatureInvalida, pubKey);
+
+        validarTransaccion(txInvalida, utxo, trace);
+    }
+
+    // locking script scrptpubkey
+    private static List<Token> crearScriptPubKey(byte[] pubKeyHash) {
+
         List<Token> scriptPubKey = new ArrayList<>();
+
         scriptPubKey.add(new Token(Opcode.OP_DUP));
         scriptPubKey.add(new Token(Opcode.OP_HASH160));
         scriptPubKey.add(new Token(pubKeyHash));
         scriptPubKey.add(new Token(Opcode.OP_EQUALVERIFY));
         scriptPubKey.add(new Token(Opcode.OP_CHECKSIG));
 
-        TransactionOutput output = new TransactionOutput(scriptPubKey);
-
-        // la salida existente en el sistema
-        UTXO utxo = new UTXO(output);
-
-        System.out.println("\n--- intento valido ---");
-        ejecutarTransaccion(pubKey, Hash.hash160(pubKey), utxo, trace);
-
-        System.out.println("\n--- intento invalido ---");
-        ejecutarTransaccion(pubKey, new byte[]{99,99,99,99}, utxo, trace);
+        return scriptPubKey;
     }
 
-    private static void ejecutarTransaccion(byte[] pubKey, byte[] signature,
-                                            UTXO utxo, boolean trace) {
+    // crea transaccion con scriptsig
+    private static Transaction crearTransaccion(byte[] signature, byte[] pubKey) {
 
         List<Token> scriptSig = new ArrayList<>();
         scriptSig.add(new Token(signature));
@@ -46,13 +72,30 @@ public class MainTest {
 
         TransactionInput input = new TransactionInput(scriptSig);
 
+        return new Transaction(
+                List.of(input),
+                new ArrayList<>()
+        );
+    }
+
+    /// Validacion
+    private static void validarTransaccion(Transaction tx, UTXO utxo, boolean trace) {
+
         BitcoinScript interpreter = new BitcoinScript(trace);
 
-        boolean result = interpreter.executeTransaction(
-                input.getScriptSig(),
-                utxo.getOutput().getScriptPubKey()
-        );
+        for (TransactionInput input : tx.getInputs()) {
 
-        System.out.println("Transaccion valida: " + result);
+            try {
+                boolean result = interpreter.executeTransaction(
+                        input.getScriptSig(),
+                        utxo.getOutput().getScriptPubKey()
+                );
+
+                System.out.println("Resultado: " + result);
+
+            } catch (ScriptException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
     }
 }
