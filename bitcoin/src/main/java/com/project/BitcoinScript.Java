@@ -143,7 +143,10 @@ public class BitcoinScript {
     private void printStack() {
         System.out.print("STACK: ");
         for (byte[] e : stack) {
-            System.out.print(bytesToInt(e) + " ");
+            System.out.print(bytesToHex(e) + " ");
+            if (e.length == 0) {
+                System.out.print("00 ");
+}
         }
         System.out.println();
     }
@@ -197,10 +200,18 @@ public class BitcoinScript {
         return bytes;
     }
 
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
     private boolean toBool(byte[] data) {
         for (int i = 0; i < data.length; i++) {
             if (data[i] != 0) {
-                // si es el último byte y es 0x80 → negative zero
+                
                 if (i == data.length - 1 && data[i] == (byte) 0x80) {
                     return false;
                 }

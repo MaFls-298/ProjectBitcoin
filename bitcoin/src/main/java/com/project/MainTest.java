@@ -3,12 +3,6 @@ package com.project;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
-
-
-
-
 public class MainTest {
 
     public static void main(String[] args) {
@@ -17,7 +11,6 @@ public class MainTest {
 
         System.out.println("===== SIMULACION P2PKH =====");
 
-        
         byte[] pubKey = new byte[]{11, 11, 11, 12};
         byte[] pubKeyHash = Hash.hash160(pubKey);
 //utxo
@@ -73,8 +66,7 @@ public class MainTest {
         TransactionInput input = new TransactionInput(scriptSig);
 
         return new Transaction(
-                List.of(input),
-                new ArrayList<>()
+            List.of(input), new ArrayList<>()
         );
     }
 
