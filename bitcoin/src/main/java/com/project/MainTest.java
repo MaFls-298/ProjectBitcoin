@@ -3,53 +3,56 @@ package com.project;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 public class MainTest {
 
     public static void main(String[] args) {
 
         boolean trace = true;
 
-        System.out.println("\n validod");
-        ejecutarCaso(true, trace);
+        System.out.println("=== Simulacion de transaccion ===");
 
-        System.out.println("\n no valido");
-        ejecutarCaso(false, trace);
-    }
-
-    private static void ejecutarCaso(boolean firmaValida, boolean trace) {
-
-        List<Token> script = new ArrayList<>();
-
-        byte[] pubKey = new byte[]{11, 11, 11, 12};
-
+        // original
+        byte[] pubKey = new byte[]{11,11,11,12};
         byte[] pubKeyHash = Hash.hash160(pubKey);
 
-        byte[] signature;
+        // scriptPubKey)
+        List<Token> scriptPubKey = new ArrayList<>();
+        scriptPubKey.add(new Token(Opcode.OP_DUP));
+        scriptPubKey.add(new Token(Opcode.OP_HASH160));
+        scriptPubKey.add(new Token(pubKeyHash));
+        scriptPubKey.add(new Token(Opcode.OP_EQUALVERIFY));
+        scriptPubKey.add(new Token(Opcode.OP_CHECKSIG));
 
-        if (firmaValida) {
-            signature = Hash.hash160(pubKey); 
-        } else {
-            signature = new byte[]{99, 99, 99, 99}; 
-        }
+        TransactionOutput output = new TransactionOutput(scriptPubKey);
 
-        // =scriptsig
-        script.add(new Token(signature));
-        script.add(new Token(pubKey));
+        // la salida existente en el sistema
+        UTXO utxo = new UTXO(output);
 
-        // pubkey
-        script.add(new Token(Opcode.OP_DUP));
-        script.add(new Token(Opcode.OP_HASH160));
-        script.add(new Token(pubKeyHash));
-        script.add(new Token(Opcode.OP_EQUALVERIFY));
-        script.add(new Token(Opcode.OP_CHECKSIG));
+        System.out.println("\n--- intento valido ---");
+        ejecutarTransaccion(pubKey, Hash.hash160(pubKey), utxo, trace);
+
+        System.out.println("\n--- intento invalido ---");
+        ejecutarTransaccion(pubKey, new byte[]{99,99,99,99}, utxo, trace);
+    }
+
+    private static void ejecutarTransaccion(byte[] pubKey, byte[] signature,
+                                            UTXO utxo, boolean trace) {
+
+        List<Token> scriptSig = new ArrayList<>();
+        scriptSig.add(new Token(signature));
+        scriptSig.add(new Token(pubKey));
+
+        TransactionInput input = new TransactionInput(scriptSig);
 
         BitcoinScript interpreter = new BitcoinScript(trace);
 
-        try {
-            boolean result = interpreter.execute(script);
-            System.out.println("Resultado final: " + result);
-        } catch (ScriptException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
+        boolean result = interpreter.executeTransaction(
+                input.getScriptSig(),
+                utxo.getOutput().getScriptPubKey()
+        );
+
+        System.out.println("Transaccion valida: " + result);
     }
 }

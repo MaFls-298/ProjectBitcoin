@@ -1,19 +1,22 @@
 package com.project;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 public class BitcoinScript {
 
-    private Stack stack;
+    private Deque<byte[]> stack;
     private boolean trace;
 
     public BitcoinScript(boolean trace) {
-        this.stack = new Stack();
+        this.stack = new ArrayDeque<>();
         this.trace = trace;
     }
 
     public boolean execute(List<Token> script) {
-
+        stack.clear();
         for (Token token : script) {
 
             if (token.isOpcode()) {
@@ -23,163 +26,180 @@ public class BitcoinScript {
             }
 
             if (trace) {
-                stack.printStack();
+                printStack();
             }
         }
 
         return isValid();
     }
 
+    //crea lista nueva, recibe scriptsig y scriptpuubeky, concatena y ejecuta juntos
+    public boolean executeTransaction(List<Token> scriptSig, List<Token> scriptPubKey) {
+
+        List<Token> fullScript = new ArrayList<>();
+        fullScript.addAll(scriptSig);
+        fullScript.addAll(scriptPubKey);
+
+        return execute(fullScript);
+    }
+
+
     private void executeOpcode(Opcode opcode) {
 
         switch (opcode) {
 
-            case OP_0:
-                stack.push(Stack.intToBytes(0));
-                break;
-
-            case OP_1:
-                stack.push(Stack.intToBytes(1));
-                break;
-
-            case OP_2:
-                stack.push(Stack.intToBytes(2));
-                break;
-
-            case OP_3:
-                stack.push(Stack.intToBytes(3));
-                break;
-
-            case OP_4:
-                stack.push(Stack.intToBytes(4));
-                break;
-
-            case OP_5:
-                stack.push(Stack.intToBytes(5));
-                break;
-
-            case OP_6:
-                stack.push(Stack.intToBytes(6));
-                break;
-
-            case OP_7:
-                stack.push(Stack.intToBytes(7));
-                break;
-
-            case OP_8:
-                stack.push(Stack.intToBytes(8));
-                break;
-
-            case OP_9:
-                stack.push(Stack.intToBytes(9));    
-                break;
-            
-            case OP_10:
-                stack.push(Stack.intToBytes(10));
-                break;
-
-            case OP_11:
-                stack.push(Stack.intToBytes(11));
-                break;
-
-            case OP_12:
-                stack.push(Stack.intToBytes(12));
-                break;
-
-            case OP_13:
-                stack.push(Stack.intToBytes(13));   
-                break;
-
-            case OP_14:
-                stack.push(Stack.intToBytes(14));
-                break;
-
-            case OP_15:
-                stack.push(Stack.intToBytes(15));  
-                break;
-
-            case OP_16:
-                stack.push(Stack.intToBytes(16));
-                break;
-
-            case OP_DUP: //duplica top
-                byte[] top = stack.peek();
-                stack.push(top);
+            case OP_DUP: //duplica superior
+                if (stack.isEmpty()) {
+                    throw new ScriptException("OP_DUP failed: stack empty");
+                }
+                stack.push(stack.peek().clone());
                 break;
 
             case OP_DROP:
+                if (stack.isEmpty()) {
+                    throw new ScriptException("OP_DROP failed: stack empty");
+                }
                 stack.pop();
                 break;
 
             case OP_ADD:
-                int x = Stack.bytesToInt(stack.pop());
-                int y = Stack.bytesToInt(stack.pop());
-                stack.push(Stack.intToBytes(x + y));
+                if (stack.size() < 2) {
+                    throw new ScriptException("OP_ADD failed: not enough elements");
+                }
+                int add1 = bytesToInt(stack.pop());
+                int add2 = bytesToInt(stack.pop());
+                stack.push(intToBytes(add1 + add2));
                 break;
 
             case OP_SUB:
-                int sub1 = Stack.bytesToInt(stack.pop());
-                int sub2 = Stack.bytesToInt(stack.pop());
-                stack.push(Stack.intToBytes(sub2 - sub1));
+                if (stack.size() < 2) {
+                    throw new ScriptException("OP_SUB failed: not enough elements");
+                }
+                int sub1 = bytesToInt(stack.pop());
+                int sub2 = bytesToInt(stack.pop());
+                stack.push(intToBytes(sub2 - sub1));
                 break;
 
             case OP_EQUAL:
-                byte[] v1 = stack.pop();
-                byte[] v2 = stack.pop();
-                boolean equal = Stack.bytesToInt(v1) == Stack.bytesToInt(v2);
-                stack.push(Stack.intToBytes(equal ? 1 : 0));
+                if (stack.size() < 2) {
+                    throw new ScriptException("OP_EQUAL failed: not enough elements");
+                }
+                byte[] v1 = stack.pop(); //compara los arrays completos
+                byte[] v2 = stack.pop(); //push boolean 
+                stack.push(intToBytes(java.util.Arrays.equals(v1, v2) ? 1 : 0));
                 break;
 
-            case OP_VERIFY:
-                int value = Stack.bytesToInt(stack.pop());
-                if (value == 0) {
-                    throw new ScriptException("OP_VERIFY failed");
+            case OP_EQUALVERIFY:
+                if (stack.size() < 2) {
+                    throw new ScriptException("OP_EQUALVERIFY failed: not enough elements");
+                }
+                byte[] ev1 = stack.pop();
+                byte[] ev2 = stack.pop();
+
+                if (!java.util.Arrays.equals(ev1, ev2)) {
+                    throw new ScriptException("OP_EQUALVERIFY failed");
                 }
                 break;
 
             case OP_HASH160:
+                if (stack.isEmpty()) {
+                    throw new ScriptException("OP_HASH160 failed: stack empty");
+                }
                 byte[] data = stack.pop();
-                byte[] hashed = Hash.hash160(data);
-                stack.push(hashed);
+                stack.push(Hash.hash160(data));
                 break;
 
             case OP_CHECKSIG:
+                if (stack.size() < 2) {
+                    throw new ScriptException("OP_CHECKSIG failed: not enough elements");
+                }
                 byte[] signature = stack.pop();
                 byte[] pubKey = stack.pop();
 
                 boolean valid = Hash.verifySignature(pubKey, signature);
 
-                stack.push(Stack.intToBytes(valid ? 1 : 0));
+                stack.push(intToBytes(valid ? 1 : 0));
                 break;
 
-            case OP_CHECKSIGVERIFY:
-                byte[] sig = stack.pop();
-                byte[] key = stack.pop();
-
-                boolean verif = Hash.verifySignature(key, sig);
-
-                if (!verif) {
-                    throw new ScriptException("CHECKSIGVERIFY failed");
-                }
-                break;
-
-            case OP_EQUALVERIFY:
-                byte[] eq1 = stack.pop();
-                byte[] eq2 = stack.pop();
-                boolean eqv = Stack.bytesToInt(eq1) == Stack.bytesToInt(eq2);
-                if (!eqv) {
-                    throw new ScriptException("EQUALVERIFY no son iguales");
-                }
-                break;
-
-        
             default:
-                throw new ScriptException("a");
+                throw new ScriptException("Opcode no implementado");
         }
     }
 
     private boolean isValid() {
         if (stack.isEmpty()) return false;
-        return Stack.bytesToInt(stack.peek()) != 0;
+        return toBool(stack.peek());
     }
+
+    private void printStack() {
+        System.out.print("STACK: ");
+        for (byte[] e : stack) {
+            System.out.print(bytesToInt(e) + " ");
+        }
+        System.out.println();
+    }
+
+
+    //little-endian
+    private int bytesToInt(byte[] bytes) {
+
+        if (bytes.length == 0) return 0;
+
+        int result = 0;
+
+        for (int i = 0; i < bytes.length; i++) {
+            result |= (bytes[i] & 0xFF) << (8 * i);
+        }
+
+        if ((bytes[bytes.length - 1] & 0x80) != 0) {
+            result &= ~(0x80 << (8 * (bytes.length - 1)));
+            return -result;
+        }
+
+        return result;
+    }
+
+    private byte[] intToBytes(int value) {
+
+        if (value == 0) return new byte[]{};
+
+        boolean negative = value < 0;
+        int absValue = Math.abs(value);
+
+        ArrayList<Byte> result = new ArrayList<>();
+
+        while (absValue > 0) {
+            result.add((byte) (absValue & 0xFF));
+            absValue >>= 8;
+        }
+
+        // bit de sign
+        if ((result.get(result.size() - 1) & 0x80) != 0) {
+            result.add((byte) (negative ? 0x80 : 0x00));
+        } else if (negative) {
+            result.set(result.size() - 1, (byte) (result.get(result.size() - 1) | 0x80));
+        }
+//array
+        byte[] bytes = new byte[result.size()];
+        for (int i = 0; i < result.size(); i++) {
+            bytes[i] = result.get(i);
+        }
+
+        return bytes;
+    }
+
+    private boolean toBool(byte[] data) {
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] != 0) {
+                // si es el último byte y es 0x80 → negative zero
+                if (i == data.length - 1 && data[i] == (byte) 0x80) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
+
 }
