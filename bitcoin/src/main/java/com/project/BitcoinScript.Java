@@ -9,40 +9,12 @@ public class BitcoinScript {
 
     private Deque<byte[]> stack;
     private boolean trace;
+    private Deque<Boolean> executionStack = new ArrayDeque<>();
 
     public BitcoinScript(boolean trace) {
         this.stack = new ArrayDeque<>();
         this.trace = trace;
     }
-
-    public boolean execute(List<Token> script) {
-        stack.clear();
-        for (Token token : script) {
-
-            if (token.isOpcode()) {
-                executeOpcode(token.getOpcode());
-            } else {
-                stack.push(token.getData());
-            }
-
-            if (trace) {
-                printStack();
-            }
-        }
-
-        return isValid();
-    }
-
-    //crea lista nueva, recibe scriptsig y scriptpuubeky, concatena y ejecuta juntos
-    public boolean executeTransaction(List<Token> scriptSig, List<Token> scriptPubKey) {
-
-        List<Token> fullScript = new ArrayList<>();
-        fullScript.addAll(scriptSig);
-        fullScript.addAll(scriptPubKey);
-
-        return execute(fullScript);
-    }
-
 
     private void executeOpcode(Opcode opcode) {
 
@@ -130,10 +102,99 @@ public class BitcoinScript {
                 stack.push(intToBytes(valid ? 1 : 0));
                 break;
 
-            default:
-                throw new ScriptException("Opcode no implementado");
+            case OP_IF:
+            case OP_NOTIF:
+
+                boolean condition = false;
+
+                if (shouldExecute()) {
+                    if (stack.isEmpty()) {
+                        throw new ScriptException("OP_IF failed: stack empty");
+                    }
+
+                    condition = toBool(stack.pop());
+
+                    if (opcode == Opcode.OP_NOTIF) {
+                        condition = !condition;
+                    }
+                }
+
+                executionStack.push(condition);
+                break;
+
+            case OP_ELSE:
+
+                if (executionStack.isEmpty()) {
+                    throw new ScriptException("OP_ELSE without OP_IF");
+                }
+
+                boolean current = executionStack.pop();
+                executionStack.push(!current);
+                break;
+
+            case OP_ENDIF:
+
+                if (executionStack.isEmpty()) {
+                    throw new ScriptException("OP_ENDIF without OP_IF");
+                }
+
+                executionStack.pop();
+                break;
+
+                default:
+                    throw new ScriptException("Opcode no implementado");
+            }
         }
+
+////////////////////////////////////////////////////////////////////////////
+
+
+
+    public boolean execute(List<Token> script) {
+
+        stack.clear();
+        executionStack.clear();
+
+        for (Token token : script) {
+
+            if (token.isOpcode()) {
+
+                Opcode op = token.getOpcode();
+
+                if (op == Opcode.OP_IF || op == Opcode.OP_NOTIF ||
+                    op == Opcode.OP_ELSE || op == Opcode.OP_ENDIF) {
+
+                    executeOpcode(op);
+
+                } else if (shouldExecute()) {
+                    executeOpcode(op);
+                }
+
+            } else {
+                if (shouldExecute()) {
+                    stack.push(token.getData());
+                }
+            }
+
+            if (trace) {
+                printStack();
+            }
+        }
+
+        return isValid();
     }
+
+    //crea lista nueva, recibe scriptsig y scriptpuubeky, concatena y ejecuta juntos
+    public boolean executeTransaction(List<Token> scriptSig, List<Token> scriptPubKey) {
+
+        List<Token> fullScript = new ArrayList<>();
+        fullScript.addAll(scriptSig);
+        fullScript.addAll(scriptPubKey);
+
+        return execute(fullScript);
+    }
+
+
 
     private boolean isValid() {
         if (stack.isEmpty()) return false;
@@ -221,5 +282,12 @@ public class BitcoinScript {
         return false;
     }
 
-
+    ///if else /////
+    
+    private boolean shouldExecute() {
+        return executionStack.stream().allMatch(b -> b);
+    }
 }
+
+
+
