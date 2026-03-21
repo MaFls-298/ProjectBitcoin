@@ -142,7 +142,7 @@ public class BitcoinScript {
                 break;
 
                 default:
-                    throw new ScriptException("Opcode no implementado");
+                    throw new ScriptException("Opcode ivnalido: " + opcode);
             }
         }
 
@@ -176,12 +176,17 @@ public class BitcoinScript {
                 }
             }
 
+            if (trace) {
+                System.out.println("Token: " + (token.isOpcode() ? token.getOpcode() : bytesToHex(token.getData())));
+                printStack();
+            }
+
             if (!executionStack.isEmpty()) {
                 throw new ScriptException("Unclosed IF block");
                 
             }
         }
-        printStack();
+        
         return isValid();
     }
 
