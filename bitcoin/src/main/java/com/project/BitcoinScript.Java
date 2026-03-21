@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+
 public class BitcoinScript {
 
     private Deque<byte[]> stack;
@@ -16,7 +17,7 @@ public class BitcoinScript {
         this.trace = trace;
     }
 
-    private void executeOpcode(Opcode opcode) {
+    private void executeOpcode(Opcode opcode, byte[] message) {
 
         switch (opcode) {
 
@@ -97,7 +98,7 @@ public class BitcoinScript {
                 byte[] signature = stack.pop();
                 byte[] pubKey = stack.pop();
 
-                boolean valid = Hash.verifySignature(pubKey, signature);
+                boolean valid = Hash.verifySignature(pubKey, message, signature);
 
                 stack.push(intToBytes(valid ? 1 : 0));
                 break;
@@ -150,7 +151,7 @@ public class BitcoinScript {
 
 
 
-    public boolean execute(List<Token> script) {
+    public boolean execute(List<Token> script, byte[] message) {
 
         stack.clear();
         executionStack.clear();
@@ -164,10 +165,10 @@ public class BitcoinScript {
                 if (op == Opcode.OP_IF || op == Opcode.OP_NOTIF ||
                     op == Opcode.OP_ELSE || op == Opcode.OP_ENDIF) {
 
-                    executeOpcode(op);
+                    executeOpcode(op, message);
 
                 } else if (shouldExecute()) {
-                    executeOpcode(op);
+                    executeOpcode(op, message);
                 }
 
             } else {
@@ -185,19 +186,21 @@ public class BitcoinScript {
                 throw new ScriptException("Unclosed IF block");
                 
             }
+
         }
+        
         
         return isValid();
     }
 
     //crea lista nueva, recibe scriptsig y scriptpuubeky, concatena y ejecuta juntos
-    public boolean executeTransaction(List<Token> scriptSig, List<Token> scriptPubKey) {
+    public boolean executeTransaction(List<Token> scriptSig, List<Token> scriptPubKey, byte[] message) {
 
         List<Token> fullScript = new ArrayList<>();
         fullScript.addAll(scriptSig);
         fullScript.addAll(scriptPubKey);
 
-        return execute(fullScript);
+        return execute(fullScript, message);
     }
 
 

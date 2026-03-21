@@ -1,7 +1,10 @@
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\Hash.java
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\MainTest.java
-C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\Stack.java
+C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\TransactionOutput.java
+C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\TransactionInput.java
+C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\Transaction.java
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\Opcode.java
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\ScriptException.java
+C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\UTXO.java
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\BitcoinScript.java
 C:\MAFS\School\JavaProjects\Bitcoin\bitcoin\src\main\java\com\project\Token.java

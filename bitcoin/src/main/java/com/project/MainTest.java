@@ -11,7 +11,7 @@ public class MainTest {
 
         System.out.println("===== SIMULACION P2PKH =====");
 
-        byte[] pubKey = new byte[]{11, 11, 11, 12};
+        byte[] pubKey = new byte[]{11, 11, 11, 02};
         byte[] pubKeyHash = Hash.hash160(pubKey);
 //utxo
         List<Token> scriptPubKey = crearScriptPubKey(pubKeyHash);
