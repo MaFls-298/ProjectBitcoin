@@ -176,11 +176,12 @@ public class BitcoinScript {
                 }
             }
 
-            if (trace) {
-                printStack();
+            if (!executionStack.isEmpty()) {
+                throw new ScriptException("Unclosed IF block");
+                
             }
         }
-
+        printStack();
         return isValid();
     }
 
